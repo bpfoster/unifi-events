@@ -153,10 +153,10 @@ module.exports = class UnifiEvents extends EventEmitter {
       })
   }
 
-  getConfiguration() {
+  getNotificationConfiguration() {
     return this._ensureLoggedIn()
       .then(() => {
-        return this.rp.get(`${this.controller.href}api/s/${this.opts.site}/rest/setting`, {
+        return this.rp.get(`${this.controller.href}api/s/${this.opts.site}/get/setting/super_events`, {
             json: true
         })
       })
