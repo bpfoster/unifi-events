@@ -58,9 +58,13 @@ module.exports = class UnifiEvents extends EventEmitter {
       }
     })
       .then(() => {
-        if (this.socket) {
-        // inject new cookie into the ws handler
-          this.socket.options.headers.Cookie = this.jar.getCookieString(this.controller.href)
+        if (this.siteSocket) {
+          // inject new cookie into the ws handler
+          this.siteSocket.options.headers.Cookie = this.jar.getCookieString(this.controller.href)
+        }
+        if (this.superSocket) {
+          // inject new cookie into the ws handler
+          this.superSocket.options.headers.Cookie = this.jar.getCookieString(this.controller.href)
         }
       })
       .catch((e) => {
@@ -69,7 +73,7 @@ module.exports = class UnifiEvents extends EventEmitter {
   }
 
   _listen () {
-    this.socket = new WebSocket(`wss://${this.controller.host}/wss/s/${this.opts.eventsite}/events`, {
+    this.siteSocket = new WebSocket(`wss://${this.controller.host}/wss/s/${this.opts.site}/events`, {
       options: {
         perMessageDeflate: false,
         rejectUnauthorized: this.opts.rejectUnauthorized,
@@ -81,7 +85,7 @@ module.exports = class UnifiEvents extends EventEmitter {
       beforeConnect: this._ensureLoggedIn.bind(this)
     })
 
-    this.socket.on('json', (payload, flags) => {
+    this.siteSocket.on('json', (payload, flags) => {
       if ('data' in payload && Array.isArray(payload.data)) {
         payload.data.forEach((entry) => {
           this._event(entry)
@@ -89,7 +93,32 @@ module.exports = class UnifiEvents extends EventEmitter {
       }
     })
 
-    this.socket.on('websocket-status', (status) => {
+    this.siteSocket.on('websocket-status', (status) => {
+      this.emit('websocket-status', `UniFi Events: ${status}`)
+    })
+
+
+    this.superSocket = new WebSocket(`wss://${this.controller.host}/wss/s/${this.opts.eventsite}/events`, {
+      options: {
+        perMessageDeflate: false,
+        rejectUnauthorized: this.opts.rejectUnauthorized,
+        headers: {
+          'User-Agent': this.userAgent,
+          'Cookie': this.jar.getCookieString(this.controller.href)
+        }
+      },
+      beforeConnect: this._ensureLoggedIn.bind(this)
+    })
+
+    this.superSocket.on('json', (payload, flags) => {
+      if ('data' in payload && Array.isArray(payload.data)) {
+        payload.data.forEach((entry) => {
+          this._event(entry)
+        })
+      }
+    })
+
+    this.superSocket.on('websocket-status', (status) => {
       this.emit('websocket-status', `UniFi Events: ${status}`)
     })
   }
