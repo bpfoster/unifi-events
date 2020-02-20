@@ -11,6 +11,7 @@ module.exports = class UnifiEvents extends EventEmitter {
 
     this.opts = opts
     this.opts.site = this.opts.site || 'default'
+    this.opts.eventsite = this.opts.eventsite || 'super'
     this.userAgent = 'UniFi Events'
     this.controller = url.parse(this.opts.controller)
     this.jar = rp.jar()
@@ -68,7 +69,7 @@ module.exports = class UnifiEvents extends EventEmitter {
   }
 
   _listen () {
-    this.socket = new WebSocket(`wss://${this.controller.host}/wss/s/${this.opts.site}/events`, {
+    this.socket = new WebSocket(`wss://${this.controller.host}/wss/s/${this.opts.eventsite}/events`, {
       options: {
         perMessageDeflate: false,
         rejectUnauthorized: this.opts.rejectUnauthorized,
@@ -148,6 +149,15 @@ module.exports = class UnifiEvents extends EventEmitter {
       .then(() => {
         return this.rp.get(`${this.controller.href}api/self/sites`, {
           json: true
+        })
+      })
+  }
+
+  getConfiguration() {
+    return this._ensureLoggedIn()
+      .then(() => {
+        return this.rp.get(`${this.controller.href}api/s/${this.opts.site}/rest/setting`, {
+            json: true
         })
       })
   }
